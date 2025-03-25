@@ -1262,11 +1262,7 @@ Vtiger.Class("Vtiger_List_Js", {
 			var editInstance = Vtiger_Edit_Js.getInstance();
 			editInstance.registerBasicEvents(container);
 			var form_original_data = $("#massEdit").serialize();
-			$('#massEdit').on('submit', function (event) {
-				thisInstance.saveMassEdit(event, form_original_data, isOwnerChanged);
-				isOwnerChanged = false;
-			});
-			
+
 			//automatically select fields for mass edit when updated
 			$('#massEdit :input').change(function() {
 				var _replacedName =  $(this).attr('name').replace('[]', "");
@@ -1274,6 +1270,29 @@ Vtiger.Class("Vtiger_List_Js", {
 					_replacedName = _replacedName.replace(/(.*)_display/,"$1");
 				}
 				$(this).closest('tr').find("input[id^=include_in_mass_edit_" + _replacedName + "]").prop( "checked", true );
+			});
+
+
+			let ignoreFields = $('#massEdit input[type="checkbox"]:not(:checked)').map(function() {
+				return 'name["'+$(this).attr('data-update-field')+'"]';
+			}).get().join(",");
+
+			var params = {
+				ignore: ignoreFields,
+				submitHandler: function (form) {
+					thisInstance.saveMassEdit(e, form_original_data, isOwnerChanged);
+					isOwnerChanged = false;
+					return false; 
+				}
+			};
+			$('#massEdit').vtValidate({params});
+
+			$('#massEdit').on('change', 'input[type="checkbox"]', function() {
+				let ignoreFields = $('#massEdit input[type="checkbox"]:not(:checked)').map(function() {
+					return "name['"+$(this).attr('data-update-field')+"']";
+				}).get().join(",");
+				params.ignore = ignoreFields;
+				$('#massEdit').vtValidate({params});
 			});
 			
 			app.helper.registerLeavePageWithoutSubmit($("#massEdit"));
